@@ -1,0 +1,42 @@
+
+EXECUTABLE = scam_noisification
+
+rebuild: clean ${EXECUTABLE}
+
+all: ${EXECUTABLE}
+
+clean: 
+	rm -f ${EXECUTABLE}
+	rm -f *.o 
+
+${EXECUTABLE}:  CacheFuncs EvictionSet getThresholds Statistics comm_funcs main
+	gcc -g -Wall -o ${EXECUTABLE} CacheFuncs.o EvictionSet.o main.o getThresholds.o Statistics.o comm_funcs.o -l pthread 
+
+main:
+	gcc  -g -c main.c
+
+EvictionSet: 
+	gcc -g -c EvictionSet.c 
+
+CacheFuncs: 
+	gcc -g -c CacheFuncs.c 
+
+getThresholds:
+	gcc -g -c getThresholds.c 
+
+Statistics: 
+	gcc -g -c Statistics.c 
+
+comm_funcs: 
+	gcc -g -c comm_funcs.c 
+
+
+
+
+
+
+
+
+
+
+

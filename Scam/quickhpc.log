@@ -1,0 +1,10 @@
+Using config file: /home/amitkap/Desktop/Files_to_git/quickhpc/events.conf
+Monitoring 2 events:
+PAPI_L3_TCM
+PAPI_L3_TCA
+
+Using interval: 1000 usec
+Monitoring for -1 iterations
+Attaching to PID: 2755
+
+PAPI_L3_TCM,PAPI_L3_TCA

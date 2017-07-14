@@ -1,0 +1,229 @@
+#define _GNU_SOURCE
+
+#include <sys/time.h>
+
+#include <stdlib.h>
+#include <time.h>
+#include <string.h>
+#include "sched.h"
+#include <stdio.h>
+#include <netinet/in.h>
+#include <signal.h>
+#include <pthread.h>
+#include <stdbool.h>
+
+#include "CacheDefs.h"
+#include "getThresholds.h"
+#include "EvictionSet.h"
+#include "Statistics.h"
+
+//#include "comm_funcs.h"
+//#include "config.h"
+//#include "quickhpc.h"
+
+#define ANSI_COLOR_RED     "\x1b[31m"
+#define ANSI_COLOR_GREEN   "\x1b[32m"
+#define ANSI_COLOR_YELLOW  "\x1b[33m"
+#define ANSI_COLOR_BLUE    "\x1b[34m"
+#define ANSI_COLOR_MAGENTA "\x1b[35m"
+#define ANSI_COLOR_CYAN    "\x1b[36m"
+#define ANSI_COLOR_RESET   "\x1b[0m"
+
+#define MONITOR_ITERATIONS -1
+#define MONITOR_INTERVAL  100
+#define MONITOR_EVENTSFILE "events.conf"
+
+#define ALL_CORE 				0
+#define NOISE_CORE 				1
+#define WAIT_FOR_SERVER_SECONDS 5
+#define INPUTSIZE 				20
+#define OUTPUTSIZE 				20
+
+//extern int TESTS_QUIET;
+
+//Mapping
+LinesBuffer Buffer;
+LinesBuffer Buffer2;
+
+Cache_Mapping EvictionSets;
+
+int SuspectedSets[SETS_IN_CACHE];
+int numOfSuspects;
+sig_atomic_t doNoise = 0, rumbleOn = 0;
+
+/*void* dummy_detector(void* args) {
+	printf("dummy_detector()\n");
+	while (1) {
+		sleep(10);
+		doNoise = !doNoise;
+	}
+	return EXIT_SUCCESS;
+}*/
+
+void* rumble(void* args) {
+	//printf("rumble() start\n");
+	//cpu_set_t cpuset;
+	//int rs;
+	rumbleOn = 1;
+	//CPU_ZERO(&cpuset);
+	//CPU_SET(NOISE_CORE, &cpuset);
+	//rs = pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
+	//if (rs)
+	//	perror("pthread_setaffinity_np");
+	while (doNoise) {
+		int i, j;
+		for (i = 0; i < numOfSuspects; i++) {
+			if (1 == (&EvictionSets)->Sets[SuspectedSets[i]].Lines[0][0])
+				j++;
+		}
+	}
+	rumbleOn = 0;
+	//printf("rumble() end\n");
+	return EXIT_SUCCESS;
+}
+
+int main(void) {
+	int missThreshold;
+	int hitThreshold;
+	int rs = -1;
+	int SetsFound;
+	int i;
+//	int tries;
+	char input[INPUTSIZE];
+//	char output[OUTPUTSIZE];
+	int option;
+//	char monitor_filename[256];
+//	cpu_set_t cpuset;
+//	pthread_t detector_tid;
+//	pthread_t monitor_tid;
+	pthread_t rumble_tid;
+//	pthread_t scam_tid;
+//	config cfg;
+	Cache_Statistics withServer, withoutServer;
+	//fputs("stdout - works\n",stdout); fflush(stdout);
+	//fputs("stderr - works\n",stderr); fflush(stderr);
+	for (i=0; i<sizeof(LinesBuffer); i++){
+		if (*(&((&Buffer)->Lines->Bytes[0]) + i) == 1){
+			asm volatile ("lfence;");
+		}
+	}
+	while (true) {
+		if (fgets(input, INPUTSIZE, stdin) != NULL)
+			option = atoi(input);
+		else
+			perror("input");
+		switch (option) {
+		case 1:
+			puts("Sanity Check started"); fflush(stdout);
+			rs = getThresholds(&missThreshold, &hitThreshold);
+			if (rs){
+				puts("Sanity Check Failed!");  fflush(stdout);
+				fputs("0\n",stderr); fflush(stderr);
+			} else {
+				puts("Sanity Check Succeeded!"); fflush(stdout);
+				fputs("1\n",stderr); fflush(stderr);
+			}
+			break;
+		case 2:
+			puts("Mapping"); fflush(stdout);
+			SetsFound = CreateEvictionSets(&Buffer, &EvictionSets, hitThreshold, missThreshold);
+			fprintf(stdout,"\nTotal Sets found: %d\r\n", SetsFound); fflush(stdout);
+			fputs("1\n",stderr); fflush(stderr);
+			puts("Mapping Done"); fflush(stdout);
+			break;
+		case 3:
+			puts("Ranking I, Please Wait"); fflush(stdout);
+			memset(&withoutServer, 0, sizeof(Cache_Statistics));
+			GetMemoryStatistics(&EvictionSets, &withoutServer);
+			fputs("1\n",stderr); fflush(stderr);
+			puts("Ranking I Done"); fflush(stdout);
+			break;
+		case 4:
+			puts("Ranking II, Please Wait"); fflush(stdout);
+			memset(&withServer, 0, sizeof(Cache_Statistics));
+			GetMemoryStatistics(&EvictionSets, &withServer);
+			puts("Ranking II Done"); fflush(stdout);
+			puts("Comparing Ranks I & II"); fflush(stdout);
+			numOfSuspects = compareStats(&EvictionSets, SuspectedSets, SetsFound, &withoutServer, &withServer);
+			fprintf(stdout,"Number of high activity sets: %d\n", numOfSuspects); fflush(stdout);
+			fputs("1\n",stderr); fflush(stderr);
+			break;
+		case 5:
+			doNoise = true;
+			if(pthread_create(&rumble_tid, NULL, &rumble, NULL)){
+				fputs("0\n",stderr); fflush(stderr);
+				fputs("pthread_create failed\n",stdout); fflush(stdout);
+				break;
+			}
+			puts("Rumble is on"); fflush(stdout);
+			fputs("1\n",stderr); fflush(stderr);
+			break;
+		case 6:
+			doNoise = false;
+			if(pthread_join(rumble_tid, NULL)){
+				fputs("0\n",stderr); fflush(stderr);
+				fputs("pthread_join failed\n",stdout); fflush(stdout);
+				break;
+			}
+			puts("Rumble is off"); fflush(stdout);
+			fputs("1\n",stderr); fflush(stderr);
+			break;
+		default:
+			fputs("0\n",stderr); fflush(stderr);
+			puts ("invalid input"); fflush(stdout);
+			break;
+		}
+	}
+	exit(EXIT_SUCCESS);
+
+	/*
+	scam_tid = pthread_self();
+
+
+	printf("Waiting for server to connect...\n");
+	create_connection();
+	printf("Waiting for server to request start...\n");
+	recv_msg();
+
+
+
+	printf("Send msg to server...\n");
+	send_msg();
+
+	sleep(WAIT_FOR_SERVER_SECONDS);
+	printf("Ranking II, Please Wait\n");
+
+
+	CPU_ZERO(&cpuset);
+	CPU_SET(ALL_CORE, &cpuset);
+	rs = pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
+	if (rs)
+		perror("pthread_setaffinity_np");
+
+	reset_config(&cfg);
+	printf("Please enter PID to monitor: ");
+	scanf("%d", &(cfg.pid));
+	cfg.attach = true;
+	sprintf(monitor_filename, "monitor_%d.csv", cfg.pid);
+	cfg.file = fopen(monitor_filename, "w+");
+	cfg.iterations = MONITOR_ITERATIONS;
+	cfg.interval = MONITOR_INTERVAL;
+	readEventNames(MONITOR_EVENTSFILE, cfg);
+
+	printf("Start monitor thread\n");
+	pthread_create(&monitor_tid, NULL, &quickhpc, (void*) &cfg);
+
+	printf("Start detector thread\n");
+	pthread_create(&detector_tid, NULL, &dummy_detector, NULL);
+
+	printf("Start rumble thread\n");
+	pthread_create(&rumble_tid, NULL, &rumble, NULL);
+	while (1) {
+		if (doNoise && !rumbleOn) {
+			rumbleOn = 1;
+			pthread_create(&rumble_tid, NULL, &rumble, NULL);
+		}
+	}
+*/
+	return EXIT_SUCCESS;
+}
