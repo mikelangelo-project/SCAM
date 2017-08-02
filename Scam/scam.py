@@ -38,10 +38,10 @@ def ConfigSectionMap(section):
 NUM_OF_KEYS_PER_CHUNK       = int(ConfigSectionMap("quickhpc")['num_of_keys_per_chunk'])
 DECRYPT_DURATION            = int(ConfigSectionMap("quickhpc")['decrypt_duration'])
 SLEEP_DURATION              = int(ConfigSectionMap("quickhpc")['sleep_duration'])
-QUICKHPC_PATH               = ConfigSectionMap("quickhpc")['path']
+QUICKHPC_PATH               = os.path.join(os.path.dirname(os.getcwd()), "quickhpc/quickhpc")
 QUICKHPC_NUM_OF_ITERATION   = ConfigSectionMap("quickhpc")['num_of_iteration']
 QUICKHPC_INTERVAL_DURATION  = ConfigSectionMap("quickhpc")['interval_duration']
-QUICKHPC_CONF               = ConfigSectionMap("quickhpc")['conf']
+QUICKHPC_CONF               = os.path.join(os.path.dirname(os.getcwd()), "quickhpc/events.conf")
 QUICKHPC_CHUNK              = ((DECRYPT_DURATION + SLEEP_DURATION)) * NUM_OF_KEYS_PER_CHUNK
 quickhpc_log_filename       = ConfigSectionMap("quickhpc")['log_filename']
 
@@ -54,7 +54,7 @@ GET_THRESHOLDS              = config.getboolean("scam", "get_thresholds")
 #Noisification
 SANITY_TRIES                = ConfigSectionMap("noisification")['sanity_tries']
 noisification_log_filename  = ConfigSectionMap("noisification")['log_filename']
-NOISIFICATION_PATH          = ConfigSectionMap("noisification")['path']
+NOISIFICATION_PATH          = os.path.join(os.path.dirname(os.getcwd()), "scam_noisification/src/scam_noisification")
 Min_Rumble_Duration         = ConfigSectionMap("noisification")['min_rumble_duration']
 
 # Socket Communication Defines
