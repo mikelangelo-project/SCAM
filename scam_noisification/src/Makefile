@@ -1,42 +1,41 @@
+LIB=libmastik.a
+LIBSRCS=vlist.c l3.c timestats.c util.c symbol.c 
+LIBOBJS=${LIBSRCS:.c=.o}
+VERSION=$(shell cut -f 1 -d \  ../VERSION)
 
-EXECUTABLE = scam_noisification
+all: ${LIB} ${TARGETS}
 
-rebuild: clean ${EXECUTABLE}
-
-all: ${EXECUTABLE}
-
-clean: 
-	rm -f ${EXECUTABLE}
-	rm -f *.o 
-
-${EXECUTABLE}:  CacheFuncs EvictionSet getThresholds Statistics comm_funcs main
-	gcc -g -Wall -o ${EXECUTABLE} CacheFuncs.o EvictionSet.o main.o getThresholds.o Statistics.o comm_funcs.o -l pthread 
-
-main:
-	gcc  -g -c main.c
-
-EvictionSet: 
-	gcc -g -c EvictionSet.c 
-
-CacheFuncs: 
-	gcc -g -c CacheFuncs.c 
-
-getThresholds:
-	gcc -g -c getThresholds.c 
-
-Statistics: 
-	gcc -g -c Statistics.c 
-
-comm_funcs: 
-	gcc -g -c comm_funcs.c 
+include LocalMakefile
 
 
 
+CFLAGS=-g -std=gnu99 -O2 -DNDEBUG ${EXTRA_CFLAGS}
 
 
+${LIB}:${LIBOBJS}
+	ar crv ${LIB} ${LIBOBJS}
+	ranlib ${LIB}
+
+l3.o: l3.h vlist.h timestats.h low.h config.h
+
+vlist.o: vlist.h config.h
+
+timestats.o: timestats.h config.h
 
 
+#pp.o: vlist.h pp.h low.h
 
 
+btb.o: btb.h low.h config.h
 
 
+symbol.o: symbol.h util.h config.h
+
+LocalMakefile:
+	touch LocalMakefile
+
+clean:
+	rm -f ${LIB} ${LIBOBJS}
+
+distclean: clean
+	rm Makefile config.h

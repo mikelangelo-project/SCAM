@@ -2,7 +2,7 @@
 #include <limits.h>
 #include "config.h"
 #include <time.h>
-
+#include <inttypes.h>
 #ifdef _AIX
 #define _LINUX_SOURCE_COMPAT
 #endif
@@ -11,6 +11,14 @@
 # define PTRACE_ATTACH PT_ATTACH
 # define PTRACE_CONT PT_CONTINUE
 #endif
+
+//#define PRINTTIME
+
+__always_inline uint64_t rdtscp64() {
+  uint32_t low, high;
+  asm volatile ("rdtscp": "=a" (low), "=d" (high) :: "ecx");
+  return (((uint64_t)high) << 32) | low;
+}
 
 inline unsigned long gettime() {
   volatile unsigned long tl;
@@ -41,6 +49,7 @@ int main( int argc, char *argv[] )
         int numEventSets = 1; // One set should be enough
         int idx;
         int retval;
+        uint64_t t;
         long long **values;
         //long long elapsed_us, elapsed_cyc, elapsed_virt_us, elapsed_virt_cyc;
         char monitorLine[PAPI_MAX_STR_LEN];
@@ -105,6 +114,9 @@ int main( int argc, char *argv[] )
             t1 = gettime();
             vartime = timer_start();  // begin a timer called 'vartime'
 #endif
+#ifdef PRINTTIME
+            t = rdtscp64();
+#endif
             monitor(eventSet, values);
             // retval = PAPI_read( eventSet, values[0] );
             // if ( retval != PAPI_OK )
@@ -125,7 +137,11 @@ int main( int argc, char *argv[] )
 
             // fprintf(stderr, "Time to monitor: %lu\n", t2 - t1);
             buildCSVLine(monitorLine, values[0], cfg.numEvents);
-            fprintf(stdout, "%s\n", monitorLine);
+#ifdef PRINTTIME
+            fprintf(stdout, "%" PRIu64 ",%s\n" ,t ,monitorLine);
+#else
+            fprintf(stdout, "%s\n" ,monitorLine);
+#endif
             fflush(stdout);
             if (kill(pid, 0) < 0) {
                 /* Process is not active anymore */
