@@ -1,24 +1,31 @@
-# S.C.A.M.
+# SCAM - Side Channel Attack & Mitigation
 
-Side Channel Attack & Mitigation
+##Overview
+SCAM is a user space module that identifies cache side-channel attacks using the prime-and-probe technique and mitigates the effects of these attacks. The first function of SCAM is monitoring, which identifies attacks by analyzing the data of CPU counters collected through the PAPI library. The second function of SCAM is mitigation of an attack by adding noise to the cache in a way that makes it hard for an attacker to obtain information from priming and probing the cache.
 
-## Installing
+Testing SCAM is possible with three virtual machines that can be downloaded separately. The VMs include a target, which is a TLS server based on a slightly modified GNU-TLS server, a TLS client and an attacker that obtains the server's private RSA key. 
 
-Download all files.
+## Installation
 
-Go to: /quickhpc/papi-5.5.1/src and run `./configure` followed by `make`.
+### SCAM
 
-Go to: /quickhpc and run `make`.
+Download all files from the GIT.
 
-Go to: /scam_noisification and run `make`.
+Go to: ./quickhpc/papi-5.5.1/src and run `./configure` followed by `make`.
+
+Go to: ./quickhpc and run `make`.
+
+Go to: ./scam_noisification and run `make`.
 
 *If the number of cores is not a power of two:*
 
-- Go to /scam_noisification/src/l3.c and make sure that the `FULLMAPPING` flag is defined.
+-Go to ./scam_noisification/src/l3.c and make sure that the `FULLMAPPING` flag is defined.
 
-### VMs set up
+### VM Setup
 
-In order to run the VMs run the following commands:
+Load the VMs from https://drive.google.com/drive/folders/1z5rGRblR6d2rZNVXpPket3338KneKJHv?usp=sharing
+
+Configure the memory pages to "huge pages" and setup networking by running the following instructions:
 
 `sudo mount -t hugetlbfs hugetlbfs /hugepages/`
 
@@ -36,69 +43,68 @@ In order to run the VMs run the following commands:
 
 `sudo brctl addif br1 tap1`
 
-`sudo dnsmasq --interface=br1 --bind-interfaces --dhcp-range=192.168.179.10,192.168.179.254 #add dhcp for all interfaces `
-
-`binded to the bridge`
+`sudo dnsmasq --interface=br1 --bind-interfaces --dhcp-range=192.168.179.10,192.168.179.254 #add dhcp for all interfaces`
 
 
+### VM Launch:
 
-### VMs launch comamnd:
+Launch the three virtual machines by:
 
 **Attacker:**
 
-`sudo kvm -m 2G -hda $PATH$/VM1.qcow2 -mem-path /hugepages -boot c -smp 2  -name attacker -device e1000,netdev=tap1,mac=52:54:00:00:02:04 -netdev tap,id=tap1,script=/etc/qemu-ifup &`
+`sudo kvm -m 2G -hda $PATH/VM1.qcow2 -mem-path /hugepages -boot c -smp 2  -name attacker -device e1000,netdev=tap1,mac=52:54:00:00:02:04 -netdev tap,id=tap1,script=/etc/qemu-ifup &`
 
 Username: `attacker` & Password: `Qweasdd`.
 
-Go to `/FillingTheCache/` and type `make`
+Go to `~/FillingTheCache/` and type `make`
 
-Attacker program-   (`./FillingTheCache/FillingTheCache`)
+Attacker program - (`~/FillingTheCache/FillingTheCache`)
 
 **Server (Target):**
 
-`sudo kvm -m 1G -hda $PATH$/VM2.qcow2 -boot c -smp 1 -name SERVER -device e1000,netdev=tap1,mac=52:54:00:00:02:05 -netdev tap,id=tap1,script=/etc/qemu-ifup &`
+`sudo kvm -m 1G -hda $PATH/VM2.qcow2 -boot c -smp 1 -name SERVER -device e1000,netdev=tap1,mac=52:54:00:00:02:05 -netdev tap,id=tap1,script=/etc/qemu-ifup &`
 
 Username: `attacker` & Password: `1234567`
 
-Go to `/Desktop/Project/CseProject/GnuTLS_Server/` and type `make`
+Go to `~/Desktop/Project/CseProject/GnuTLS_Server/` and type `make`
 
-Server program-   (`./Desktop/Project/CseProject/GnuTLS_Server/GnuTLS_Server`)
+Server program-   (`~/Desktop/Project/CseProject/GnuTLS_Server/GnuTLS_Server`)
 
 **Client:**
 
-`sudo kvm -m 512M -hda $PATH$/VM3.qcow2 -boot c -smp 1 -name CLIENT -device e1000,netdev=tap1,mac=52:54:00:00:02:03 -netdev tap,id=tap1,script=/etc/qemu-ifup &`
+`sudo kvm -m 512M -hda $PATH/VM3.qcow2 -boot c -smp 1 -name CLIENT -device e1000,netdev=tap1,mac=52:54:00:00:02:03 -netdev tap,id=tap1,script=/etc/qemu-ifup &`
 
 Username: `attacker` & Password: `1234567`
 
-Go to `/Desktop/Project/CseProject/GnuTLS_Client/` and type `make`
+Go to `~/Desktop/Project/CseProject/GnuTLS_Client/` and type `make`
 
-Client program-   (`./Desktop/Project/CseProject/GnuTLS_Client/GnuTLS_Client`)
+Client program-   (`~/Desktop/Project/CseProject/GnuTLS_Client/GnuTLS_Client`)
 
-## Overall Flow:
+## Test:
+Testing SCAM requires several steps which are described below. SCAM must be launched ahead of all the virtual machines to map the Last Level Cache by associating memory addresses in SCAM's virtual memory to cache sets. Then the target server and the client are initialized (see above) and run the handshake. In this phase SCAM learns the cache sets that the server uses. The last step is to launch the attacker. 
 
-Go to Scam and start the program by 'sudo python scam.py',
+Perform the following steps to run the test:
 
-An xterm window will open with the scam-noisification program output - it's just for debug.
+Start SCAM by 'sudo python scam.py',
 
-Now the scam-noisification program is mapping the cache and performs a baseline sample of the cache.
+An xterm window will open with the scam-noisification program output which is only used for debug.
 
-Wait until 'Turn on the target, start the decryption process, and press any key...' is shown, now turn on the Target (Server program, see above) and the Client program (verify that a handshake is made).
+Wait until the notification 'Turn on the target, start the decryption process, and press any key...' is shown and launch the server and client VMs. Verify that TLS handshakes are executed in a loop by messages printed on the screen.
 
-Press any key and wait for second sample of the cache.
+Press any key and wait for SCAM to identify all the cache sets active during a TLS handshake. The completion of this phase is indicated by the 'to start monitoring, please enter target PID:' message. Enter the Target process PID from the hypervisor point-of-view by the following steps. Run htop,  enter F5 for the tree view, locate the process tree of the VM running the TLS server by its name (in the attached VM this name is "qemu SERVER") and select the PID of the lowest sub-process of this VM's hierarchy.
 
-Wait until 'to start monitoring, please enter target PID:' and enter the Target process PID from the hypervisor point-of-view (can be found with htop - press F5 for tree view and select the PID of the lowest sub-proccess of the VM hierarchy.
+Launch the attacker.
 
-Now the SCAM server is running, start an attack (with the Attacker) to verify that everything is working.
+## Configuration parameters: 
 
-## Notes: 
+'./Scam/scam.ini' configurable parameters:
 
-### '/Scam/scam.ini' configurable parameters:
+scam_cores - the ID of the CPU core that SCAM will use.
 
-scam\_cores - the cpu's core id that the program will use.
+plot_enable - for debug, shows the latest data on cache accesses and cache misses for the target PID.
 
-plot\_enable - for debug, shows the latest cache performance counter samples of the target PID.
+window_avg_thresh - monitoring assumes that an attack is taking place when the ratio of cache misses to cache accesses is high for a long period of time. The parameter window_avg_thresh defines a threshold on this ratio, that takes values between 0 and 1 and is 0.8 by default. Reducing the threshold may result in more false positives (classifying legitimate traffic as attacks) and may also identify attacks that otherwise go undetected. Increasing the threshold has the opposite effect.
 
-window\_avg\_thresh - control the sensitivity of the monitor.
+detect_thresh - the length of time that monitoring data must stay above window_avg_thresh to constitute an attack. The threshold is 20 milli-seconds out of a totla of 65 ms for a 4096-bit private key operation. This threshold should be modified to a fraction (no more than a third) of the time necessary to complete a private key operation by the server VM.
 
-min\_rumble\_duration - minimum time of "noise the cache" activity after detecting an attack.
-
+min_rumble_duration - minimum time of a "noisification" phase after detecting an attack.
