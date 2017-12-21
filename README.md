@@ -1,6 +1,6 @@
 # SCAM - Side Channel Attack & Mitigation
 
-##Overview
+## Overview
 SCAM is a user space module that identifies cache side-channel attacks using the prime-and-probe technique and mitigates the effects of these attacks. The first function of SCAM is monitoring, which identifies attacks by analyzing the data of CPU counters collected through the PAPI library. The second function of SCAM is mitigation of an attack by adding noise to the cache in a way that makes it hard for an attacker to obtain information from priming and probing the cache.
 
 Testing SCAM is possible with three virtual machines that can be downloaded separately. The VMs include a target, which is a TLS server based on a slightly modified GNU-TLS server, a TLS client and an attacker that obtains the server's private RSA key. 
@@ -19,7 +19,7 @@ Go to: ./scam_noisification and run `make`.
 
 *If the number of cores is not a power of two:*
 
--Go to ./scam_noisification/src/l3.c and make sure that the `FULLMAPPING` flag is defined.
+- Go to ./scam_noisification/src/l3.c and make sure that the `FULLMAPPING` flag is defined.
 
 ### VM Setup
 
