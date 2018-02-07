@@ -57,8 +57,11 @@ Scam_Cores                  = ConfigSectionMap("scam")['scam_cores'].split(",")
 noisification_log_filename  = ConfigSectionMap("noisification")['log_filename']
 NOISIFICATION_PATH          = os.path.join(os.path.dirname(os.getcwd()), "scam_noisification/scam/tool")
 Min_Rumble_Duration         = ConfigSectionMap("noisification")['min_rumble_duration']
+Is_Complement_To	    = config.getboolean("noisification","is_complement_to")
+LINES_PER_SET               = int(ConfigSectionMap("noisification")['lines_per_set'])
 Noise_Intensity             = ConfigSectionMap("noisification")['noise_intensity'].split(",")
 
+ 
 # Socket Communication Defines
 server_request              = ConfigSectionMap("comm")['server_request']
 server_response             = ConfigSectionMap("comm")['server_response']
@@ -70,6 +73,10 @@ DEMO_ARRAY_LEN              = 300
 
 noise_sock = None
 target_sock = None
+
+if Is_Complement_To:
+    Noise_Intensity[0] = str(int(Noise_Intensity[0])+LINES_PER_SET+1)
+    Noise_Intensity[1] = '0'
 
 def pid_exists(pid):
     """Check whether pid exists in the current process table.
