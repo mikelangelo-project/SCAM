@@ -46,6 +46,8 @@
 
 #define NUM_OF_ACTIVE_SETS 300
 #define NUM_OF_SUSPECTS 400
+#define LINES_PER_SET 12
+
 
 //Sampling Parameter
 #define SAMPLES_FOR_RANKING 50000
@@ -105,6 +107,8 @@ void *rumble(void* args){
 	int coreNum = prms[0];
 	int lineOffset = prms[1];
 	int intensity = prms[2];
+	int isComplementTo = intensity > LINES_PER_SET;
+	intensity = intensity % (LINES_PER_SET+1);
 
 	free(prms);
 	pinToCore(coreNum);
@@ -118,18 +122,43 @@ void *rumble(void* args){
 	char ** lines_arr = calloc(sizeof(char*),(intensity * NumOfActiveSets));
 
 	int k = 0;
+	int setForProbe = -1;
+
 	for (int i = 0; i < intensity; i++) {
 		for (int j = 0; j < nsets; j++){
 			if (ActiveSets[j]){
+				if(isComplementTo && setForProbe==-1){
+					setForProbe=j;
+					continue;
+				}
 				lines_arr[k] = l3_getline(l3, j, i+lineOffset);
 				k++;
 			}
 		}
 	}
 
-	while (doNoise) {
-		for (int i = 0; i < NumOfActiveSets * (intensity); i++) {
-			memaccess(lines_arr[i]);
+	void * p;
+	if(isComplementTo)
+		p = sethead(l3,setForProbe);
+	int flip = 0;
+
+
+
+	if(!isComplementTo){
+		while (doNoise) {
+			for (int i = 0; i < (NumOfActiveSets) * (intensity); i++) {
+				memaccess(lines_arr[i]);
+			}
+		}
+	}else{
+		while (doNoise) {
+			int i, r;
+			flip = !flip;
+			r = flip ? probecount(p) : bprobecount(p);
+			r = (r ? 1 : 0);
+			for (i = 0; i < (NumOfActiveSets-1) * (intensity-r); i++) {
+				memaccess(lines_arr[i]);
+			}
 		}
 	}
 
@@ -139,6 +168,7 @@ void *rumble(void* args){
 
 
 int* countMisses(int * dest) {
+
 	if (dest == NULL)
 		dest = (int*) calloc(nsets, sizeof(int));
 	else
@@ -146,15 +176,13 @@ int* countMisses(int * dest) {
 	uint16_t *res = calloc(SAMPLES_FOR_RANKING / RANKING_PHASES, sizeof(uint16_t));
 
 	for (int k = 0; k < RANKING_PHASES; k++){
+		printf("Monitor phase %d [%.2f%]\n", k,	(double) k / RANKING_PHASES * 100);
+		fflush(stdout);
 		for (int i = 0; i < nsets; i++) {
 			l3_unmonitorall(l3);
 			l3_monitor(l3, i);
 
-			printf("\rMonitor phase %d [%.2f%]", k,	(double) k / RANKING_PHASES * 100);
-			fflush(stdout);
-
 			l3_repeatedprobecount(l3, SAMPLES_FOR_RANKING/RANKING_PHASES, res, INTERVAL);
-
 			for (int j = 0; j < SAMPLES_FOR_RANKING/RANKING_PHASES; j++) {
 				int16_t r = (int16_t) res[j];
 				dest[i] += (r > 0);
