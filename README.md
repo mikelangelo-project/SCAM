@@ -8,12 +8,11 @@ Testing SCAM is possible with three virtual machines that can be downloaded sepa
 ## Installation
 
 ### SCAM
-
 Download all files from the GIT.
 
-Go to: ./quickhpc/papi-5.5.1/src and run `./configure` followed by `make`.
+Download and install PAPI 5.4.1 from http://icl.utk.edu/papi/news/news.html?id=358
 
-Go to: ./quickhpc and run `make`.
+Go to: ./papitool and run `make`.
 
 Go to: ./scam_noisification and run `make`.
 
