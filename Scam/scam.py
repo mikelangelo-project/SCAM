@@ -34,20 +34,20 @@ def ConfigSectionMap(section):
     return dict1
 
 # Read parameters from ini
-# quickhpc
-NUM_OF_KEYS_PER_CHUNK       = int(ConfigSectionMap("quickhpc")['num_of_keys_per_chunk'])
-DECRYPT_DURATION            = int(ConfigSectionMap("quickhpc")['decrypt_duration'])
-SLEEP_DURATION              = int(ConfigSectionMap("quickhpc")['sleep_duration'])
-QUICKHPC_PATH               = os.path.join(os.path.dirname(os.getcwd()), "quickhpc/quickhpc")
-QUICKHPC_NUM_OF_ITERATION   = ConfigSectionMap("quickhpc")['num_of_iteration']
-QUICKHPC_INTERVAL_DURATION  = ConfigSectionMap("quickhpc")['interval_duration']
-QUICKHPC_CONF               = os.path.join(os.path.dirname(os.getcwd()), "quickhpc/events.conf")
-QUICKHPC_CHUNK              = ((DECRYPT_DURATION + SLEEP_DURATION)) * NUM_OF_KEYS_PER_CHUNK
-MONITOR_WINDOW              = int(ConfigSectionMap("quickhpc")['monitor_window'])
-WINDOW_AVG_THRESH           = float(ConfigSectionMap("quickhpc")['window_avg_thresh'])
-DETECT_THRESH               = int(ConfigSectionMap("quickhpc")['detect_thresh'])
+# papitool
+NUM_OF_KEYS_PER_CHUNK       = int(ConfigSectionMap("papitool")['num_of_keys_per_chunk'])
+DECRYPT_DURATION            = int(ConfigSectionMap("papitool")['decrypt_duration'])
+SLEEP_DURATION              = int(ConfigSectionMap("papitool")['sleep_duration'])
+PAPITOOL_PATH               = os.path.join(os.path.dirname(os.getcwd()), "papitool/papitool")
+PAPITOOL_NUM_OF_ITERATION   = ConfigSectionMap("papitool")['num_of_iteration']
+PAPITOOL_INTERVAL_DURATION  = ConfigSectionMap("papitool")['interval_duration']
+PAPITOOL_CONF               = os.path.join(os.path.dirname(os.getcwd()), "papitool/events.conf")
+PAPITOOL_CHUNK              = ((DECRYPT_DURATION + SLEEP_DURATION)) * NUM_OF_KEYS_PER_CHUNK
+MONITOR_WINDOW              = int(ConfigSectionMap("papitool")['monitor_window'])
+WINDOW_AVG_THRESH           = float(ConfigSectionMap("papitool")['window_avg_thresh'])
+DETECT_THRESH               = int(ConfigSectionMap("papitool")['detect_thresh'])
 
-quickhpc_log_filename       = ConfigSectionMap("quickhpc")['log_filename']
+papitool_log_filename       = ConfigSectionMap("papitool")['log_filename']
 
 # SCAM
 plotEnable                  = config.getboolean("scam", "plot_enable")
@@ -171,7 +171,7 @@ def process_logger(pipe_from, pipe_dst, file_lock=None):
 #     return False
 
 
-def quickhpc_analyzer(pipe_from):
+def papitool_analyzer(pipe_from):
     noiseActive = False
     lastTimeAttack = 0
     attackActive = None
@@ -251,7 +251,7 @@ def main():
     # vars
     server = None
     noisification_log_file = None
-    quickhpc_log_file = None
+    papitool_log_file = None
     result = False
     try:
         # flush memory - should run with sudo
@@ -299,19 +299,19 @@ def main():
         while not pid_exists(int(target_pid)):
             target_pid = raw_input("Wrong PID, try again, please enter target PID:")
 
-        quickhpc_cmd = QUICKHPC_PATH + " -a " + target_pid + \
-                       " -c " + QUICKHPC_CONF + " -i " + QUICKHPC_INTERVAL_DURATION + \
-                       " -n " + QUICKHPC_NUM_OF_ITERATION
+        papitool_cmd = PAPITOOL_PATH + " -a " + target_pid + \
+                       " -c " + PAPITOOL_CONF + " -i " + PAPITOOL_INTERVAL_DURATION + \
+                       " -n " + PAPITOOL_NUM_OF_ITERATION
 
-        quickhpc_log_file       = open(quickhpc_log_filename,"w")
-        quickhpc_file_lock      = threading.Lock()
-        quickhpc_proc           = subprocess.Popen(shlex.split(quickhpc_cmd),stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
-        quickhpc_analyzer_proc  = threading.Thread(target = quickhpc_analyzer,  args=[quickhpc_proc.stdout])
-        quickhpc_stderr         = threading.Thread(target = process_logger,     args=(quickhpc_proc.stderr,quickhpc_log_file,quickhpc_file_lock))
+        papitool_log_file       = open(papitool_log_filename,"w")
+        papitool_file_lock      = threading.Lock()
+        papitool_proc           = subprocess.Popen(shlex.split(papitool_cmd),stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+        papitool_analyzer_proc  = threading.Thread(target = papitool_analyzer,  args=[papitool_proc.stdout])
+        papitool_stderr         = threading.Thread(target = process_logger,     args=(papitool_proc.stderr,papitool_log_file,papitool_file_lock))
 
         lastTimeAttack = int(time.time())
-        quickhpc_analyzer_proc.start()
-        quickhpc_stderr.start()
+        papitool_analyzer_proc.start()
+        papitool_stderr.start()
 
         while True:
             time.sleep(0.01)
@@ -330,14 +330,14 @@ def main():
             if noisification_stdout.isAlive():
                 noisification_stdout.join()
 
-            quickhpc_proc.kill()
-            if quickhpc_analyzer_proc is not None and quickhpc_analyzer_proc.isAlive():
-                quickhpc_analyzer_proc.join()
-            if quickhpc_stderr is not None and quickhpc_stderr.isAlive():
-                quickhpc_stderr.join()
+            papitool_proc.kill()
+            if papitool_analyzer_proc is not None and papitool_analyzer_proc.isAlive():
+                papitool_analyzer_proc.join()
+            if papitool_stderr is not None and papitool_stderr.isAlive():
+                papitool_stderr.join()
 
-            if quickhpc_log_file is not None:
-                quickhpc_log_file.close()
+            if papitool_log_file is not None:
+                papitool_log_file.close()
             if noisification_log_file is not None:
                 noisification_log_file.close()
         except UnboundLocalError:

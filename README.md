@@ -12,7 +12,7 @@ Download all files from the GIT.
 
 Download and install PAPI 5.4.1 from http://icl.utk.edu/papi/news/news.html?id=358
 
-Go to: ./papitool and run `make`.
+Go to: ./papitool, set the path of PAPI in `Makefile` and run `make`.
 
 Go to: ./scam_noisification and run `make`.
 
