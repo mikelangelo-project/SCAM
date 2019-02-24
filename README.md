@@ -13,6 +13,8 @@ Download all files from the GIT.
 Download and install PAPI 5.4.1 from http://icl.utk.edu/papi/news/news.html?id=358
 
 Go to: ./papitool, set the path of PAPI in `Makefile` and run `make`.
+Note: papitool is an auxiliary program for reading PAPI performance counters repeatedly. The program's code is based on the following PAPI test: https://icl.cs.utk.edu/papi/docs/d3/d3a/attach2_8c_source.html
+
 
 Go to: ./scam_noisification and run `make`.
 

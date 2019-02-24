@@ -34,7 +34,6 @@ def ConfigSectionMap(section):
     return dict1
 
 # Read parameters from ini
-# papitool
 NUM_OF_KEYS_PER_CHUNK       = int(ConfigSectionMap("papitool")['num_of_keys_per_chunk'])
 DECRYPT_DURATION            = int(ConfigSectionMap("papitool")['decrypt_duration'])
 SLEEP_DURATION              = int(ConfigSectionMap("papitool")['sleep_duration'])
@@ -46,7 +45,6 @@ PAPITOOL_CHUNK              = ((DECRYPT_DURATION + SLEEP_DURATION)) * NUM_OF_KEY
 MONITOR_WINDOW              = int(ConfigSectionMap("papitool")['monitor_window'])
 WINDOW_AVG_THRESH           = float(ConfigSectionMap("papitool")['window_avg_thresh'])
 DETECT_THRESH               = int(ConfigSectionMap("papitool")['detect_thresh'])
-
 papitool_log_filename       = ConfigSectionMap("papitool")['log_filename']
 
 # SCAM
@@ -121,55 +119,6 @@ def process_logger(pipe_from, pipe_dst, file_lock=None):
         else:
             time.sleep (1)
     pipe_dst.close()
-#
-# def analyzeSamples(samples,monitorChart):
-#     ratio = []
-#     for line in samples:
-#         PAPI_L3_TCM = map(int,line.split(','))[0]
-#         ratio.append(PAPI_L3_TCM)
-#     filterValueThresh = sorted(ratio)[len(ratio)*90/100]
-#     if plotEnable:
-#         ratioIndex = range (0, len (ratio))
-#         monitorChart.update (ratioIndex, ratio)
-#     j = 2
-#     while j<len(ratio)-2:
-#         if ratio[j] > filterValueThresh: # avereage anomalities
-#             ratio[j] = int(numpy.mean([ratio[j-2],ratio[j-1],ratio[j],ratio[j+1]]))
-#         j+=1
-#
-#     j=0
-#     minRatio = int(numpy.max(ratio)) # init min
-#     while j<len(ratio)-10:
-#         tmpMeanRatio = int(numpy.mean(ratio[j:j+10]))
-#         if  tmpMeanRatio < minRatio:
-#             minRatio = tmpMeanRatio
-#         j+=10
-#
-#     thresholdForAnomaly = monitorAnomalyThreshold + minRatio
-#     j=0
-#     while j < len(ratio):
-#         if ratio[j] > thresholdForAnomaly:
-#             ratio[j] = 1
-#         else:
-#             ratio[j] = 0
-#         j+=1
-#     zeroIndex = 0
-#     j = 0
-#     ratio[len(ratio)-1] = 0
-#     while j < len(ratio):
-#         if ratio[j] == 0:
-#             if j-zeroIndex < 10:
-#                 ratio[zeroIndex:j] = numpy.full(j-zeroIndex,0)
-#             zeroIndex = j
-#         j += 1
-#
-#     j = 0
-#     while j < len (ratio):
-#         if ratio[j] == 1:
-#             return True
-#         j += 1
-#     return False
-
 
 def papitool_analyzer(pipe_from):
     noiseActive = False
@@ -294,7 +243,7 @@ def main():
         # Ranking II
         send_to_client (noise_sock, "3")
 
-        # Quickhpc
+        # papitool
         target_pid = raw_input("to start monitoring, please enter target PID:")
         while not pid_exists(int(target_pid)):
             target_pid = raw_input("Wrong PID, try again, please enter target PID:")
